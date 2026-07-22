@@ -178,24 +178,6 @@ $type = $_GET["type"] ?? "success";
                                     Edit
                                 </a>
 
-                                <form
-                                    action="delete_product.php"
-                                    method="POST"
-                                    onsubmit="return confirm('Delete this product?');"
-                                >
-
-                                    <input
-                                        type="hidden"
-                                        name="id"
-                                        value="<?php echo $row["id"]; ?>"
-                                    >
-
-                                    <button type="submit" class="btn delete">
-                                        Delete
-                                    </button>
-
-                                </form>
-
                             </td>
                         </tr>
 
