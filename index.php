@@ -129,7 +129,6 @@ $type = $_GET["type"] ?? "success";
                         <th>Price</th>
                         <th>Quantity</th>
                         <th>Supplier</th>
-                        <th>Date Added</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -163,10 +162,6 @@ $type = $_GET["type"] ?? "success";
 
                             <td>
                                 <?php echo htmlspecialchars($row["supplier"]); ?>
-                            </td>
-
-                            <td>
-                                <?php echo $row["created_at"]; ?>
                             </td>
 
                             <td class="actions">

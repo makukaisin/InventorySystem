@@ -23,10 +23,7 @@ $price = $_POST["price"] ?? "";
 $quantity = $_POST["quantity"] ?? "";
 $supplier = trim($_POST["supplier"] ?? "");
 
-if (
-    filter_var($productId, FILTER_VALIDATE_INT) === false ||
-    (int) $productId <= 0
-) {
+{
     redirectWithMessage("error", "Invalid product ID.");
 }
 
@@ -48,10 +45,7 @@ if (!is_numeric($price) || (float) $price < 0) {
 
 $price = (float) $price;
 
-if (
-    filter_var($quantity, FILTER_VALIDATE_INT) === false ||
-    (int) $quantity < 0
-) {
+ {
     redirectWithMessage(
         "error",
         "Please enter a valid non-negative quantity."

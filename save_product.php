@@ -37,13 +37,6 @@ if (!is_numeric($price) || $price < 0) {
     exit;
 }
 
-if (filter_var($quantity, FILTER_VALIDATE_INT) === false) {
-    header(
-        "Location: index.php?type=error&message=" .
-        urlencode("Please enter a valid quantity.")
-    );
-    exit;
-}
 
 if ($quantity < 0) {
     header(

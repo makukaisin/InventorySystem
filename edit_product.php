@@ -4,13 +4,6 @@ require_once "db.php";
 
 $productId = $_GET["id"] ?? "";
 
-if (
-    filter_var($productId, FILTER_VALIDATE_INT) === false ||
-    (int) $productId <= 0
-) {
-    header("Location: index.php");
-    exit;
-}
 
 $productId = (int) $productId;
 
