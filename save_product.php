@@ -1,5 +1,7 @@
 <?php
 
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
 require_once "db.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -24,7 +26,6 @@ if (
         "Location: index.php?type=error&message=" .
         urlencode("All fields are required.")
     );
-
     exit;
 }
 
@@ -33,16 +34,14 @@ if (!is_numeric($price) || $price < 0) {
         "Location: index.php?type=error&message=" .
         urlencode("Please enter a valid price.")
     );
-
     exit;
 }
 
-if (!filter_var($quantity, FILTER_VALIDATE_INT) && $quantity != 0) {
+if (filter_var($quantity, FILTER_VALIDATE_INT) === false) {
     header(
         "Location: index.php?type=error&message=" .
         urlencode("Please enter a valid quantity.")
     );
-
     exit;
 }
 
@@ -51,42 +50,52 @@ if ($quantity < 0) {
         "Location: index.php?type=error&message=" .
         urlencode("Quantity cannot be negative.")
     );
-
     exit;
 }
 
-$stmt = $conn->prepare(
-    "INSERT INTO products
-    (product_name, category, price, quantity, supplier)
-    VALUES (?, ?, ?, ?, ?)"
-);
+$stmt = null;
 
-$stmt->bind_param(
-    "ssdis",
-    $productName,
-    $category,
-    $price,
-    $quantity,
-    $supplier
-);
+try {
+    $stmt = $conn->prepare(
+        "INSERT INTO products
+        (product_name, category, price, quantity, supplier)
+        VALUES (?, ?, ?, ?, ?)"
+    );
 
-if ($stmt->execute()) {
+    $stmt->bind_param(
+        "ssdis",
+        $productName,
+        $category,
+        $price,
+        $quantity,
+        $supplier
+    );
+
+    $stmt->execute();
 
     header(
         "Location: index.php?type=success&message=" .
         urlencode("Product added successfully.")
     );
+} catch (mysqli_sql_exception $error) {
+    if ($error->getCode() === 1062) {
+        header(
+            "Location: index.php?type=error&message=" .
+            urlencode("Product name already exists. Please use another name.")
+        );
+    } else {
+        header(
+            "Location: index.php?type=error&message=" .
+            urlencode("Unable to add product. Please try again.")
+        );
+    }
+} finally {
+    if ($stmt !== null) {
+        $stmt->close();
+    }
 
-} else {
-
-    header(
-        "Location: index.php?type=error&message=" .
-        urlencode("Unable to add product.")
-    );
+    $conn->close();
 }
-
-$stmt->close();
-$conn->close();
 
 exit;
 ?>
