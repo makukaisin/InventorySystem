@@ -1,3 +1,12 @@
+<?php
+require_once "db.php";
+
+$result = $conn->query("SELECT * FROM products ORDER BY id DESC");
+
+$message = $_GET["message"] ?? "";
+$type = $_GET["type"] ?? "success";
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -102,3 +111,12 @@
 </form>
 
 </section>
+
+</div>
+
+</body>
+</html>
+
+<?php
+$conn->close();
+?>
