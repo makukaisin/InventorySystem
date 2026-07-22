@@ -2,16 +2,35 @@
 
 require_once "db.php";
 
+function redirectWithMessage(string $type, string $message): void
+{
+    header(
+        "Location: index.php?type=" . urlencode($type) .
+        "&message=" . urlencode($message)
+    );
+    exit;
+}
+
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Location: index.php");
     exit;
 }
 
+$productId = $_POST["id"] ?? "";
 $productName = trim($_POST["product_name"] ?? "");
 $category = trim($_POST["category"] ?? "");
 $price = $_POST["price"] ?? "";
 $quantity = $_POST["quantity"] ?? "";
 $supplier = trim($_POST["supplier"] ?? "");
+
+if (
+    filter_var($productId, FILTER_VALIDATE_INT) === false ||
+    (int) $productId <= 0
+) {
+    redirectWithMessage("error", "Invalid product ID.");
+}
+
+$productId = (int) $productId;
 
 if (
     $productName === "" ||
@@ -20,73 +39,95 @@ if (
     $quantity === "" ||
     $supplier === ""
 ) {
-    header(
-        "Location: index.php?type=error&message=" .
-        urlencode("All fields are required.")
-    );
-
-    exit;
+    redirectWithMessage("error", "All fields are required.");
 }
 
-if (!is_numeric($price) || $price < 0) {
-    header(
-        "Location: index.php?type=error&message=" .
-        urlencode("Please enter a valid price.")
-    );
-
-    exit;
+if (!is_numeric($price) || (float) $price < 0) {
+    redirectWithMessage("error", "Please enter a valid price.");
 }
 
-if (!filter_var($quantity, FILTER_VALIDATE_INT) && $quantity != 0) {
-    header(
-        "Location: index.php?type=error&message=" .
-        urlencode("Please enter a valid quantity.")
-    );
+$price = (float) $price;
 
-    exit;
-}
-
-if ($quantity < 0) {
-    header(
-        "Location: index.php?type=error&message=" .
-        urlencode("Quantity cannot be negative.")
-    );
-
-    exit;
-}
-
-$stmt = $conn->prepare(
-    "INSERT INTO products
-    (product_name, category, price, quantity, supplier)
-    VALUES (?, ?, ?, ?, ?)"
-);
-
-$stmt->bind_param(
-    "ssdis",
-    $productName,
-    $category,
-    $price,
-    $quantity,
-    $supplier
-);
-
-if ($stmt->execute()) {
-
-    header(
-        "Location: index.php?type=success&message=" .
-        urlencode("Product added successfully.")
-    );
-
-} else {
-
-    header(
-        "Location: index.php?type=error&message=" .
-        urlencode("Unable to add product.")
+if (
+    filter_var($quantity, FILTER_VALIDATE_INT) === false ||
+    (int) $quantity < 0
+) {
+    redirectWithMessage(
+        "error",
+        "Please enter a valid non-negative quantity."
     );
 }
 
-$stmt->close();
-$conn->close();
+$quantity = (int) $quantity;
 
-exit;
+try {
+    $checkStmt = $conn->prepare(
+        "SELECT id
+         FROM products
+         WHERE product_name = ?
+         AND id != ?
+         LIMIT 1"
+    );
+
+    $checkStmt->bind_param("si", $productName, $productId);
+    $checkStmt->execute();
+
+    $duplicateResult = $checkStmt->get_result();
+
+    if ($duplicateResult->num_rows > 0) {
+        $checkStmt->close();
+
+        redirectWithMessage(
+            "error",
+            "Another product already uses the name {$productName}."
+        );
+    }
+
+    $checkStmt->close();
+
+    $stmt = $conn->prepare(
+        "UPDATE products
+         SET product_name = ?,
+             category = ?,
+             price = ?,
+             quantity = ?,
+             supplier = ?
+         WHERE id = ?"
+    );
+
+    $stmt->bind_param(
+        "ssdisi",
+        $productName,
+        $category,
+        $price,
+        $quantity,
+        $supplier,
+        $productId
+    );
+
+    $stmt->execute();
+
+    $stmt->close();
+    $conn->close();
+
+    redirectWithMessage(
+        "success",
+        "Product updated successfully."
+    );
+
+} catch (mysqli_sql_exception $exception) {
+    $conn->close();
+
+    if ($exception->getCode() === 1062) {
+        redirectWithMessage(
+            "error",
+            "The product name {$productName} already exists."
+        );
+    }
+
+    redirectWithMessage(
+        "error",
+        "Database error. Unable to update the product."
+    );
+}
 ?>
